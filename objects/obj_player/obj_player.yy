@@ -31,8 +31,8 @@
   "resourceVersion":"2.0",
   "solid":false,
   "spriteId":{
-    "name":"spr_player_idle_front_strip4_sheet",
-    "path":"sprites/spr_player_idle_front_strip4_sheet/spr_player_idle_front_strip4_sheet.yy",
+    "name":"spr_player_idle_front",
+    "path":"sprites/spr_player_idle_front/spr_player_idle_front.yy",
   },
   "spriteMaskId":null,
   "visible":true,
