@@ -45,31 +45,34 @@ var new_sprite = sprite_index;
 
 switch (facing_dir) {
     case "right":
-        new_sprite = spr_player_idle_right;
         image_xscale = 1;
-		if(is_moving && input_shift){
-			new_sprite = spr_player_walking_right;
-		}else {
+        if (is_moving && input_shift) {
+            new_sprite = spr_player_walking_right;
+        } else if (is_moving && !input_shift) {
+            new_sprite = spr_player_running_right; // TODO: reemplazar por spr_player_running_right cuando exista
+        } else {
             new_sprite = spr_player_idle_right;
         }
         break;
     
     case "left":
-        new_sprite = spr_player_idle_right;
-        image_xscale = -1;
-		if(is_moving && input_shift){
-			new_sprite = spr_player_walking_right
-		}else {
+        image_xscale = -1; // reutilizamos los sprites de "right" volteados
+        if (is_moving && input_shift) {
+            new_sprite = spr_player_walking_right;
+        } else if (is_moving && !input_shift) {
+            new_sprite = spr_player_running_right; // TODO: reemplazar por spr_player_running_right cuando exista
+        } else {
             new_sprite = spr_player_idle_right;
         }
         break;
     
     case "up":
-        new_sprite = spr_player_idle_up;
         image_xscale = 1;
-		if(is_moving && input_shift){
-			new_sprite = spr_player_walking_up;
-		}else {
+        if (is_moving && input_shift) {
+            new_sprite = spr_player_walking_up;
+        } else if (is_moving && !input_shift) {
+            new_sprite = spr_player_running_up; // TODO: reemplazar por spr_player_running_up cuando exista
+        } else {
             new_sprite = spr_player_idle_up;
         }
         break;
@@ -78,7 +81,9 @@ switch (facing_dir) {
         image_xscale = 1;
         if (is_moving && input_shift) {
             new_sprite = spr_player_walking_front;
-        }else {
+        } else if (is_moving && !input_shift) {
+            new_sprite = spr_player_running_front;
+        } else {
             new_sprite = spr_player_idle_front;
         }
         break;
