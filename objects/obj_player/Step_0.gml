@@ -22,52 +22,28 @@ if (move_x != 0 && move_y != 0) {
     move_y *= 0.7071;
 }
 
-// --- Aplicar movimiento ---
-x += move_x * move_speed;
-y += move_y * move_speed;
+// --- Aplicar movimiento con colisiones ---
+var _dx = move_x * move_speed;
+var _dy = move_y * move_speed;
 
-// --- Determinar dirección visual (8 direcciones) con tiempo de gracia ---
-var new_facing = "";
+if (!place_meeting(x + _dx, y, obj_npc_parent)) {
+    x += _dx;
+}
+if (!place_meeting(x, y + _dy, obj_npc_parent)) {
+    y += _dy;
+}
 
-if (move_y < 0 && move_x > 0) {
-    new_facing = "up_right";
-} else if (move_y < 0 && move_x < 0) {
-    new_facing = "up_left";
-} else if (move_y > 0 && move_x > 0) {
-    new_facing = "down_right";
-} else if (move_y > 0 && move_x < 0) {
-    new_facing = "down_left";
-} else if (move_y < 0) {
-    new_facing = "up";
+// --- Determinar dirección visual (4 direcciones, prioridad vertical) ---
+if (move_y < 0) {
+    facing_dir = "up";
 } else if (move_y > 0) {
-    new_facing = "down";
+    facing_dir = "down";
 } else if (move_x < 0) {
-    new_facing = "left";
+    facing_dir = "left";
 } else if (move_x > 0) {
-    new_facing = "right";
+    facing_dir = "right";
 }
-
-if (new_facing == "") {
-    // Sin input: se conserva facing_dir y se reinicia el contador
-    diagonal_grace_timer = 0;
-}
-else if (string_pos("_", new_facing) > 0) {
-    // Es una diagonal: se actualiza y se recarga el tiempo de gracia
-    facing_dir = new_facing;
-    last_diagonal = new_facing;
-    diagonal_grace_timer = diagonal_grace_max;
-}
-else if (diagonal_grace_timer > 0 && string_pos(new_facing, last_diagonal) > 0) {
-    // Quedó una sola tecla, pero es parte de la diagonal anterior
-    // (ej: venía "up_right" y queda "up" o "right") -> mantener la diagonal
-    facing_dir = last_diagonal;
-    diagonal_grace_timer--;
-}
-else {
-    // Dirección simple normal
-    facing_dir = new_facing;
-    diagonal_grace_timer = 0;
-}
+// Sin input, facing_dir conserva su último valor
 
 // --- Guardar si el jugador se está moviendo ---
 is_moving = (move_x != 0 || move_y != 0);
@@ -109,41 +85,29 @@ switch (facing_dir) {
         else if (state == "run") new_sprite = spr_player_running_front;
         else                     new_sprite = spr_player_idle_front;
         break;
-
-    case "down_right":
-        image_xscale = 1;
-        if (state == "walk")     new_sprite = spr_player_walking_down_right;
-        else if (state == "run") new_sprite = spr_player_running_down_right;
-        else                     new_sprite = spr_player_idle_down_right;
-        break;
-
-    case "down_left":
-        image_xscale = -1; // espejo de down_right
-        if (state == "walk")     new_sprite = spr_player_walking_down_right;
-        else if (state == "run") new_sprite = spr_player_running_down_right;
-        else                     new_sprite = spr_player_idle_down_right;
-        break;
-
-    case "up_right":
-        image_xscale = 1;
-        if (state == "walk")     new_sprite = spr_player_walking_right_up; // ver aviso: renombrar a walking_up_right
-        else if (state == "run") new_sprite = spr_player_running_up_right;
-        else                     new_sprite = spr_player_idle_up_right;
-        break;
-
-    case "up_left":
-        image_xscale = -1; // espejo de up_right
-        if (state == "walk")     new_sprite = spr_player_walking_right_up; // ver aviso
-        else if (state == "run") new_sprite = spr_player_running_up_right;
-        else                     new_sprite = spr_player_idle_up_right;
-        break;
 }
 
-// --- Solo cambiar el sprite si es distinto al actual ---
 if (new_sprite != sprite_index) {
     sprite_index = new_sprite;
     image_index = 0;
 }
+
+// --- Elegir máscara de colisión según hacia dónde miramos ---
+var new_mask = mask_front;
+if (facing_dir == "left" || facing_dir == "right") {
+    new_mask = mask_side;
+}
+
+if (new_mask != mask_index) {
+    var old_mask = mask_index;
+    mask_index = new_mask;
+    if (place_meeting(x, y, obj_npc_parent)) {
+        mask_index = old_mask;
+    }
+}
+
+// --- Orden de dibujo ---
+depth = -y;
 
 // --- Interacción con NPCs (Z o Enter) ---
 var input_interact = keyboard_check_pressed(ord("Z")) || keyboard_check_pressed(vk_enter);
