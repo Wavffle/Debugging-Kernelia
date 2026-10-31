@@ -12,7 +12,7 @@ window_center();
 surface_resize(APP_SURF, BASE_W * window_scale, BASE_H * window_scale);
 display_set_gui_size(BASE_W, BASE_H)
 
-room_goto(rm_start)
+room_goto(rm_start);
 
 snap_to_target = function(){
 	if (!instance_exists(obj_player)) return;

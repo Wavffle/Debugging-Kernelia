@@ -1,0 +1,1 @@
+global.paused = instance_exists(obj_menu);

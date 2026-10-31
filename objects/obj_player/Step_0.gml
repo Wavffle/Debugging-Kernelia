@@ -1,3 +1,9 @@
+if (global.paused) {
+    image_speed = 0;
+    exit;
+}
+image_speed = 1;
+
 // --- Leer input ---
 var input_right = keyboard_check(vk_right) || keyboard_check(ord("D"));
 var input_left  = keyboard_check(vk_left)  || keyboard_check(ord("A"));
