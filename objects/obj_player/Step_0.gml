@@ -133,6 +133,15 @@ if (input_interact) {
     var npc = instance_place(x + _fx * interact_reach, y + _fy * interact_reach, obj_npc_parent);
 
     if (npc != noone) {
-        npc.face_towards(x, y);
+    // El NPC mira en sentido contrario a hacia donde mira el jugador
+    var _opposite = "down";
+    switch (facing_dir) {
+        case "up":    _opposite = "down";  break;
+        case "down":  _opposite = "up";    break;
+        case "left":  _opposite = "right"; break;
+        case "right": _opposite = "left";  break;
     }
+
+    npc.face_direction(_opposite);
+	}
 }

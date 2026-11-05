@@ -7,35 +7,38 @@ sprite_idle_down = -1;
 sprite_idle_up   = -1;
 sprite_idle_side = -1; // mirando a la derecha; la izquierda se logra volteando
 
-// --- Mirar hacia un punto (por ejemplo, hacia el jugador) ---
+// --- Mirar hacia una dirección concreta: "up", "down", "left" o "right" ---
+face_direction = function(_dir) {
+    facing_dir = _dir;
+
+    // Si falta algún sprite, se usa el de frente
+    var _spr = sprite_idle_down;
+    var _flip = 1;
+
+    switch (facing_dir) {
+        case "up":
+            if (sprite_idle_up != -1) _spr = sprite_idle_up;
+            break;
+        case "right":
+            if (sprite_idle_side != -1) _spr = sprite_idle_side;
+            break;
+        case "left":
+            if (sprite_idle_side != -1) { _spr = sprite_idle_side; _flip = -1; }
+            break;
+    }
+
+    sprite_index = _spr;
+    image_xscale = _flip;
+}
+
+// --- Mirar hacia un punto (respaldo, por si no se conoce la dirección) ---
 face_towards = function(_target_x, _target_y) {
     var dx = _target_x - x;
     var dy = _target_y - y;
 
-    // Elegimos el eje con mayor distancia: horizontal o vertical
     if (abs(dx) > abs(dy)) {
-        facing_dir = (dx > 0) ? "right" : "left";
+        face_direction((dx > 0) ? "right" : "left");
     } else {
-        facing_dir = (dy > 0) ? "down" : "up";
-    }
-
-    // Aplicar el sprite correspondiente
-    switch (facing_dir) {
-        case "down":
-            sprite_index = sprite_idle_down;
-            image_xscale = 1;
-            break;
-        case "up":
-            sprite_index = sprite_idle_up;
-            image_xscale = 1;
-            break;
-        case "right":
-            sprite_index = sprite_idle_side;
-            image_xscale = 1;
-            break;
-        case "left":
-            sprite_index = sprite_idle_side;
-            image_xscale = -1; // espejo
-            break;
+        face_direction((dy > 0) ? "down" : "up");
     }
 }

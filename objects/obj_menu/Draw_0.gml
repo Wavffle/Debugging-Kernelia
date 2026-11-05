@@ -36,7 +36,13 @@ for (var i = 0; i < op_length; i++) {
     var _txt = option[menu_level, i];
     var _y = _start_y + op_space * i;
     var _c = c_white;
-    if (pos == i) { _c = _sel_col; }
+    if (pos == i) {
+        _c = _sel_col;
+        // Parpadeo: alterna entre el color de selección y blanco
+        if (blink_timer > 0 && floor(blink_timer / blink_speed) mod 2 == 1) {
+            _c = c_white;
+        }
+    }
 
     draw_set_halign(fa_center);
     draw_text_transformed_colour(_center_x, _y, _txt, text_scale, text_scale, 0, _c, _c, _c, _c, 1);

@@ -3,7 +3,7 @@
   "%Name":"spr_rey_idle_front",
   "bboxMode":2,
   "bbox_bottom":31,
-  "bbox_left":0,
+  "bbox_left":1,
   "bbox_right":29,
   "bbox_top":24,
   "collisionKind":1,

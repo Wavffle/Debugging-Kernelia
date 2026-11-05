@@ -25,3 +25,9 @@ op_length = array_length(option[menu_level]);
 just_opened = true;
 
 depth = -100000;
+
+audio_play_sound(snd_menu_open, 1, false);
+
+blink_timer = 0;
+blink_duration = 12; // duración total en frames (12 = 0.2 s a 60 fps)
+blink_speed = 3;     // frames entre cada cambio de color
