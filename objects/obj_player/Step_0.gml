@@ -6,9 +6,9 @@ image_speed = 1;
 
 // --- Leer input ---
 var input_right = keyboard_check(vk_right) || keyboard_check(ord("D"));
-var input_left  = keyboard_check(vk_left)  || keyboard_check(ord("A"));
-var input_up    = keyboard_check(vk_up)    || keyboard_check(ord("W"));
-var input_down  = keyboard_check(vk_down)  || keyboard_check(ord("S"));
+var input_left = keyboard_check(vk_left) || keyboard_check(ord("A"));
+var input_up = keyboard_check(vk_up) || keyboard_check(ord("W"));
+var input_down = keyboard_check(vk_down) || keyboard_check(ord("S"));
 var input_shift = keyboard_check(vk_shift);
 
 // --- Determinar velocidad según Shift ---
@@ -119,9 +119,20 @@ depth = -y;
 var input_interact = keyboard_check_pressed(ord("Z")) || keyboard_check_pressed(vk_enter);
 
 if (input_interact) {
-    var npc = instance_nearest(x, y, obj_npc_parent);
+    // Hacia dónde apunta el jugador
+    var _fx = 0;
+    var _fy = 0;
+    switch (facing_dir) {
+        case "up": _fy = -1; break;
+        case "down": _fy = 1; break;
+        case "left": _fx = -1; break;
+        case "right": _fx = 1; break;
+    }
 
-    if (npc != noone && point_distance(x, y, npc.x, npc.y) <= interact_range) {
+    // ¿Hay un NPC justo delante, a distancia de alcance?
+    var npc = instance_place(x + _fx * interact_reach, y + _fy * interact_reach, obj_npc_parent);
+
+    if (npc != noone) {
         npc.face_towards(x, y);
     }
 }

@@ -28,8 +28,8 @@
   "nineSlice":null,
   "origin":7,
   "parent":{
-    "name":"GepeT",
-    "path":"folders/Sprites/NPCs/GepeT.yy",
+    "name":"Idle",
+    "path":"folders/Sprites/NPCs/GepeT/Idle.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",
