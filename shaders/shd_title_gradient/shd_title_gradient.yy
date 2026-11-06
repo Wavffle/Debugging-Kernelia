@@ -1,0 +1,12 @@
+{
+  "$GMShader":"",
+  "%Name":"shd_title_gradient",
+  "name":"shd_title_gradient",
+  "parent":{
+    "name":"Shaders",
+    "path":"folders/Shaders.yy",
+  },
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
+}

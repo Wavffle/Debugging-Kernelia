@@ -54,23 +54,56 @@ for (var i = 0; i < op_length; i++) {
     }
 }
 
-// --- Ayuda fija abajo (siempre visible) ---
-var _hs = 1; // escala pequeña y fija
-var _parts = ["Z", " para confirmar,", " X", " para volver"];
-var _cols = [make_colour_rgb(90, 220, 110), c_white, make_colour_rgb(240, 80, 80), c_white];
+// --- Ayuda fija abajo, con teclas en pixel art ---
+var _gap = 4;          // espacio entre elementos
+var _group_gap = 12;   // espacio extra entre "confirmar" y la siguiente tecla
 
+var _green = make_colour_rgb(90, 220, 110);
+var _red   = make_colour_rgb(240, 80, 80);
+
+var _items = [
+    { kind: "key", txt: "Z",         col: _green },
+    { kind: "key", txt: "Enter",     col: _green },
+    { kind: "txt", txt: "confirmar", col: c_white },
+    { kind: "gap", txt: "",          col: c_white },
+    { kind: "key", txt: "X",         col: _red },
+    { kind: "key", txt: "Esc",       col: _red },
+    { kind: "txt", txt: "volver",    col: c_white }
+];
+var _n = array_length(_items);
+
+// Ancho total para centrar el conjunto
 var _total_w = 0;
-for (var j = 0; j < array_length(_parts); j++) {
-    _total_w += string_width(_parts[j]) * _hs;
+for (var j = 0; j < _n; j++) {
+    var _it = _items[j];
+    if (_it.kind == "key")      _total_w += keycap_width(_it.txt);
+    else if (_it.kind == "txt") _total_w += string_width(_it.txt);
+    else                        _total_w += _group_gap;
+    if (j < _n - 1) _total_w += _gap;
 }
 
+var _key_h = keycap_height() + 2; // altura de la tecla + relieve
 var _hx = _center_x - _total_w / 2;
-var _hy = _view_y + _view_h - string_height("Z") * _hs - 8;
+var _hy = _view_y + _view_h - _key_h - 10;
 
 draw_set_halign(fa_left);
-for (var j = 0; j < array_length(_parts); j++) {
-    draw_text_transformed_colour(_hx, _hy, _parts[j], _hs, _hs, 0, _cols[j], _cols[j], _cols[j], _cols[j], 1);
-    _hx += string_width(_parts[j]) * _hs;
+draw_set_valign(fa_top);
+
+for (var j = 0; j < _n; j++) {
+    var _it = _items[j];
+    if (_it.kind == "key") {
+        draw_keycap(_hx, _hy, _it.txt, _it.col);
+        _hx += keycap_width(_it.txt);
+    } else if (_it.kind == "txt") {
+        draw_set_colour(_it.col);
+        draw_text(_hx, _hy + 1 - key_trim, _it.txt);
+        _hx += string_width(_it.txt);
+    } else {
+        _hx += _group_gap;
+    }
+    _hx += _gap;
 }
+
+draw_set_colour(c_white);
 
 draw_set_halign(fa_left);
