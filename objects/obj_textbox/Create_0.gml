@@ -4,7 +4,7 @@ textbox_height = 96;
 border = 12;
 line_sep = 14;
 line_width = textbox_width - border*2;
-txtb_spr = spr_dialogue_box_protagonista;
+txtb_spr[0] = spr_dialogue_box_protagonista;
 txtb_img = 0;
 //for when the textbox is animated
 txtb_img_spd = 0;
