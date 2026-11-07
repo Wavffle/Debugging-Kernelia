@@ -22,5 +22,5 @@
   "resourceVersion":"2.0",
   "sampleRate":44100,
   "soundFile":"snd_menu_open.wav",
-  "volume":0.9,
+  "volume":0.85,
 }

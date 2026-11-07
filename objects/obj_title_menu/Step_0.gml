@@ -77,6 +77,12 @@ if (accept_key) {
     if (menu_level == 0 && pos == 1) exit;
 
     var _is_back = (menu_level == 1 && pos == 3);
-    audio_play_sound(_is_back ? snd_menu_back : snd_menu_select, 1, false);
-    blink_timer = blink_duration;
+    var _is_new_game = (menu_level == 0 && pos == 0);
+
+    var _snd = snd_menu_select;
+    if (_is_back) _snd = snd_menu_back;
+    if (_is_new_game) _snd = snd_new_game;
+
+    audio_play_sound(_snd, 1, false);
+    blink_timer = _is_new_game ? 60 : blink_duration;
 }
