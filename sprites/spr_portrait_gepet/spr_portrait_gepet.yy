@@ -1,6 +1,6 @@
 {
   "$GMSprite":"v2",
-  "%Name":"spr_protrait_gepet",
+  "%Name":"spr_portrait_gepet",
   "bboxMode":0,
   "bbox_bottom":57,
   "bbox_left":5,
@@ -22,7 +22,7 @@
   "layers":[
     {"$GMImageLayer":"","%Name":"779740af-37a8-4dfc-a2c5-1ff8a9e5119e","blendMode":0,"displayName":"default","isLocked":false,"name":"779740af-37a8-4dfc-a2c5-1ff8a9e5119e","opacity":100.0,"resourceType":"GMImageLayer","resourceVersion":"2.0","visible":true,},
   ],
-  "name":"spr_protrait_gepet",
+  "name":"spr_portrait_gepet",
   "nineSlice":null,
   "origin":0,
   "parent":{
@@ -34,7 +34,7 @@
   "resourceVersion":"2.0",
   "sequence":{
     "$GMSequence":"v1",
-    "%Name":"spr_protrait_gepet",
+    "%Name":"spr_portrait_gepet",
     "autoRecord":true,
     "backdropHeight":768,
     "backdropImageOpacity":0.5,
@@ -58,7 +58,7 @@
       "resourceType":"KeyframeStore<MomentsEventKeyframe>",
       "resourceVersion":"2.0",
     },
-    "name":"spr_protrait_gepet",
+    "name":"spr_portrait_gepet",
     "playback":1,
     "playbackSpeed":6.0,
     "playbackSpeedType":0,
@@ -70,10 +70,10 @@
     "tracks":[
       {"$GMSpriteFramesTrack":"","builtinName":0,"events":[],"inheritsTrackColour":true,"interpolation":1,"isCreationTrack":false,"keyframes":{"$KeyframeStore<SpriteFrameKeyframe>":"","Keyframes":[
             {"$Keyframe<SpriteFrameKeyframe>":"","Channels":{
-                "0":{"$SpriteFrameKeyframe":"","Id":{"name":"8966f6bf-d787-4034-8972-75f1a7d06487","path":"sprites/spr_protrait_gepet/spr_protrait_gepet.yy",},"resourceType":"SpriteFrameKeyframe","resourceVersion":"2.0",},
+                "0":{"$SpriteFrameKeyframe":"","Id":{"name":"8966f6bf-d787-4034-8972-75f1a7d06487","path":"sprites/spr_portrait_gepet/spr_portrait_gepet.yy",},"resourceType":"SpriteFrameKeyframe","resourceVersion":"2.0",},
               },"Disabled":false,"id":"68a1d373-7091-41b7-b3bc-c383cff32642","IsCreationKey":false,"Key":0.0,"Length":1.0,"resourceType":"Keyframe<SpriteFrameKeyframe>","resourceVersion":"2.0","Stretch":false,},
             {"$Keyframe<SpriteFrameKeyframe>":"","Channels":{
-                "0":{"$SpriteFrameKeyframe":"","Id":{"name":"1ee83480-2c9b-4c8c-8958-c4aed4d2f63e","path":"sprites/spr_protrait_gepet/spr_protrait_gepet.yy",},"resourceType":"SpriteFrameKeyframe","resourceVersion":"2.0",},
+                "0":{"$SpriteFrameKeyframe":"","Id":{"name":"1ee83480-2c9b-4c8c-8958-c4aed4d2f63e","path":"sprites/spr_portrait_gepet/spr_portrait_gepet.yy",},"resourceType":"SpriteFrameKeyframe","resourceVersion":"2.0",},
               },"Disabled":false,"id":"04d3e3f1-2d34-47a5-a9eb-1ad4208aaaa5","IsCreationKey":false,"Key":1.0,"Length":1.0,"resourceType":"Keyframe<SpriteFrameKeyframe>","resourceVersion":"2.0","Stretch":false,},
           ],"resourceType":"KeyframeStore<SpriteFrameKeyframe>","resourceVersion":"2.0",},"modifiers":[],"name":"frames","resourceType":"GMSpriteFramesTrack","resourceVersion":"2.0","spriteId":null,"trackColour":0,"tracks":[],"traits":0,},
     ],

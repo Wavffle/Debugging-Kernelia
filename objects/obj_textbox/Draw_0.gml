@@ -83,10 +83,36 @@ if (setup = false) {
 	}
 }
 
-//typing the text
-if (draw_char <text_length[page]) {
-	draw_char += text_spd;
-	draw_char = clamp(draw_char, 0, text_length[page]);
+//------------------------typing the text------------------------//
+if (text_pause_timer <= 0) {
+	if (draw_char < text_length[page]) {
+		
+		draw_char += text_spd;
+		draw_char = clamp(draw_char, 0, text_length[page]);
+		var _check_char = string_char_at(text[page], draw_char);
+		
+		if (_check_char == "." || _check_char == "?" || _check_char == "!" || _check_char == ",") {
+			text_pause_timer = text_pause_time;
+			
+			if (!audio_is_playing(snd[page])) {
+				audio_play_sound(snd[page], 8, false);
+			}
+		}
+		else{
+			//typing sound
+			if snd_count < snd_delay{
+				snd_count++;
+			}
+			else{
+				snd_count = 0;
+				audio_play_sound(snd[page], 8, false);
+			}
+		}
+	}
+}
+
+else {
+	text_pause_timer--;
 }
 
 //------------------------flip through pages------------------------//
@@ -114,16 +140,22 @@ if (accept_key) {
 }
 
 //------------------------draw the textbox------------------------//
-var _txtb_x =  textbox_x + text_x_offset[page];
+
+var _txtb_x = textbox_x + text_x_offset[page];
 var _txtb_y = textbox_y;
 txtb_img += txtb_img_spd;
 txtb_spr_w = sprite_get_width(txtb_spr[page]);
 txtb_spr_h = sprite_get_height(txtb_spr[page]);
+
 //draw the speaker
 if (speaker_sprite[page] != noone) {
+	
 	sprite_index = speaker_sprite[page];
+	if (draw_char == text_length[page]) { image_index = 0}
+	
 	var _speaker_x = textbox_x + portrait_x_offset[page];
 	if (speaker_side[page] = -1) { _speaker_x += sprite_width};
+	
 	//draw the speaker
 	draw_sprite_ext(txtb_spr[page], txtb_img, textbox_x + portrait_x_offset[page], textbox_y, sprite_width/txtb_spr_w, sprite_height/txtb_spr_h, 0, c_white, 1);
 	draw_sprite_ext(sprite_index, image_index, _speaker_x, textbox_y, speaker_side[page], 1, 0, c_white, 1);
@@ -168,6 +200,34 @@ if (draw_char == text_length[page] && page == page_number - 1) {
 
 //draw the text
 for(var c = 0 ; c < draw_char ; c++){
+	
+	//----special stuff----//
+	//floating text
+	var _float_y = 0;
+	if (float_text[c, page] == true){
+	
+		float_dir[c, page] += -6;
+		_float_y = dsin(float_dir[c, page]) * 1;
+	}
+	
+	//shake text
+	var _shake_x = 0;
+	var _shake_y = 0;
+	if(shake_text[c, page] == true){
+		
+		shake_timer[c, page]--;
+		if (shake_timer[c, page] <= 0){
+		
+			shake_timer[c, page] = irandom_range(4,8);
+			shake_dir[c, page] = irandom (360);
+		}
+		if (shake_timer[c, page] <= 2){
+		
+			_shake_x = lengthdir_x(1, shake_dir[c, page]);
+			_shake_y = lengthdir_y(1, shake_dir[c, page]);
+		}
+	}
+	
 	//the text
-	draw_text(char_x[c,page], char_y[c,page], char[c,page]);
+	draw_text_colour(char_x[c,page] + _shake_x, char_y[c,page] + _float_y + _shake_y, char[c,page], col_1[c,page], col_2[c,page], col_3[c,page], col_4[c,page], 1);
 }
