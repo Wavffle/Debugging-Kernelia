@@ -22,8 +22,9 @@ function scr_set_defaults_for_text(){
 	txtb_spr[page_number] = spr_dialogue_box_protagonista;
 	speaker_sprite[page_number] = noone;
 	speaker_side[page_number] = noone;
+	speaker_name[page_number] = "";
 	
-	snd[page_number] = snd_voice_gepet;
+	snd[page_number] = snd_voice_protagonista;
 }
 
 //-----------------------text VFX-----------------------//
@@ -65,6 +66,18 @@ function scr_text_shake(_start, _end){
 	}
 }
 
+/// @param character_id
+function scr_character_name(_id){
+	switch(_id){
+		case "protagonista": return "Protagonista"; // más adelante: el nombre elegido + "-IA"
+		case "gepet": return "Gepe-T";
+		case "cloude": return "Cloude";
+		case "rey": return "Rey de Tutorealis";
+
+	}
+	return "";
+}
+
 /// @param text
 /// @param [character]
 /// @param [side]
@@ -76,6 +89,12 @@ function scr_text(_text){
 	
 	// get character info
 	if (argument_count > 1) {
+		
+		// el nombre depende solo del personaje
+		var _char_id = argument[1];
+		var _dash = string_pos("-", _char_id);
+		if (_dash > 0) { _char_id = string_copy(_char_id, 1, _dash - 1); }
+		speaker_name[page_number] = scr_character_name(_char_id);
 		
 		speaker_side[page_number] = 1; // por defecto, el personaje va a la izquierda
 		
@@ -93,6 +112,11 @@ function scr_text(_text){
 				txtb_spr[page_number] = spr_dialogue_box_protagonista;
 				snd[page_number] = snd_voice_protagonista;
 				break;
+			case "protagonista-cansado":
+				speaker_sprite[page_number] = spr_portrait_protagonista_cansado;
+				txtb_spr[page_number] = spr_dialogue_box_protagonista;
+				snd[page_number] = snd_voice_protagonista;
+				break;
 				
 			//gepet
 			case "gepet":
@@ -100,7 +124,45 @@ function scr_text(_text){
 				txtb_spr[page_number] = spr_dialogue_box_gepet;
 				snd[page_number] = snd_voice_gepet;
 				break;
+				
+			//cloude
+			case "cloude":
+			    speaker_sprite[page_number] = spr_portrait_cloude;
+			    txtb_spr[page_number] = spr_dialogue_box_cloude;
+			    snd[page_number] = snd_voice_cloude;
+			    break;
+				
+			//rey de tutorealis
+			case "rey":
+			    speaker_sprite[page_number] = spr_portrait_rey;
+			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
+			    snd[page_number] = snd_voice_rey;
+			    break;
+			case "rey-sorprendido":
+			    speaker_sprite[page_number] = spr_portrait_rey_sorprendido;
+			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
+			    snd[page_number] = snd_voice_rey;
+			    break;
+				
+			//npc de tutorealis
+			case "npc-1":
+			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
+			    snd[page_number] = snd_voice_npc_tutorealis;
+			    break;
+			case "npc-2":
+			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
+			    snd[page_number] = snd_voice_npc_tutorealis;
+			    break;
+			case "npc-3":
+			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
+			    snd[page_number] = snd_voice_npc_tutorealis;
+			    break;
 		}
+	}
+	
+	// Si el personaje no tiene retrato, la caja va centrada
+	if (speaker_sprite[page_number] == noone) {
+	    speaker_side[page_number] = noone;
 	}
 	
 	//side the character is on

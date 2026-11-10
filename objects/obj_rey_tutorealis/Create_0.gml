@@ -1,5 +1,7 @@
 event_inherited();
 
+can_wander = false;
+
 npc_name = "Rey de Tutorealis";
 
 // --- Sprites en reposo (los usa face_towards al interactuar) ---
@@ -15,6 +17,4 @@ sprite_walk_side = spr_rey_walking_right;
 // La máscara de colisión
 mask_index = spr_rey_idle_front;
 
-dialogue_lines = [
-    { speaker: "Rey de Tutorealis", text: "Texto de prueba.", portrait: noone, expression: 0 }
-];
+text_id = "conversacion_con_rey";

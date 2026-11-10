@@ -11,6 +11,16 @@ var input_up = keyboard_check(vk_up) || keyboard_check(ord("W"));
 var input_down = keyboard_check(vk_down) || keyboard_check(ord("S"));
 var input_shift = keyboard_check(vk_shift);
 
+// --- ¿Hay un diálogo abierto? Si es así, se anula el movimiento ---
+var talking = instance_exists(obj_textbox);
+if (talking) {
+    input_right = false;
+    input_left = false;
+    input_up = false;
+    input_down = false;
+    input_shift = false;
+}
+
 // --- Determinar velocidad según Shift ---
 if (input_shift) {
     move_speed = walk_speed;
@@ -53,6 +63,17 @@ if (move_y < 0) {
 
 // --- Guardar si el jugador se está moviendo ---
 is_moving = (move_x != 0 || move_y != 0);
+
+// --- Guardar el rastro solo si se alejó al menos 1 px del último punto ---
+var _n_trail = array_length(trail_x);
+if (_n_trail == 0 || point_distance(x, y, trail_x[_n_trail - 1], trail_y[_n_trail - 1]) >= 1) {
+    array_push(trail_x, x);
+    array_push(trail_y, y);
+    if (array_length(trail_x) > trail_max) {
+        array_delete(trail_x, 0, 1);
+        array_delete(trail_y, 0, 1);
+    }
+}
 
 // --- Estado de animación: idle / walk (con Shift) / run (por defecto) ---
 var state = "idle";
@@ -118,7 +139,7 @@ depth = -y;
 // --- Interacción con NPCs (Z o Enter) ---
 var input_interact = keyboard_check_pressed(ord("Z")) || keyboard_check_pressed(vk_enter);
 
-if (input_interact) {
+if (input_interact && !talking) {
     // Hacia dónde apunta el jugador
     var _fx = 0;
     var _fy = 0;
@@ -142,6 +163,6 @@ if (input_interact) {
         case "right": _opposite = "left";  break;
     }
 
-    npc.face_direction(_opposite);
+    npc.interact(_opposite);
 	}
 }

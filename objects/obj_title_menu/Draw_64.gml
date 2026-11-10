@@ -18,8 +18,9 @@ gpu_set_texfilter(false);
 
 // --- Logo en alta resolución ---
 var _cx = GUI_W / 2;
+var _logo_frame = floor(current_time / 1000 * logo_fps) mod sprite_get_number(spr_title_logo);
 gpu_set_texfilter(true);
-draw_sprite_ext(spr_title_logo, 0, _cx, logo_y, logo_scale, logo_scale, 0, c_white, 1);
+draw_sprite_ext(spr_title_logo, _logo_frame, _cx, logo_y, logo_scale, logo_scale, 0, c_white, 1);
 gpu_set_texfilter(false);
 
 // --- Opciones ---

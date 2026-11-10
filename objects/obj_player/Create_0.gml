@@ -10,3 +10,8 @@ interact_reach = 10;
 mask_front = spr_player_idle_front;
 mask_side  = spr_player_idle_right;
 mask_index = mask_front;
+
+// --- Rastro de posiciones (lo siguen los compañeros de la party) ---
+trail_x = [];
+trail_y = [];
+trail_max = 60;

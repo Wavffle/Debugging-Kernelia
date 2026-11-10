@@ -28,6 +28,7 @@ indicator_gap = 6; // separación entre el texto y los indicadores > <
 
 logo_target_w = 235; // ancho del logo en pantalla (GUI), antes 280 * 0.84
 logo_scale = logo_target_w / sprite_get_width(spr_title_logo);
+logo_fps = 7;
 logo_y = 25;
 // El menú queda debajo del logo, con 20 px de separación
 menu_y = floor(logo_y + sprite_get_height(spr_title_logo) * logo_scale + 14);
