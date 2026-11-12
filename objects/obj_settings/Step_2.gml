@@ -1,1 +1,1 @@
-global.paused = instance_exists(obj_menu);
+global.paused = instance_exists(obj_menu) || instance_exists(obj_ram_game);

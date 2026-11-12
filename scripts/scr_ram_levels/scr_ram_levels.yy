@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_ram_levels",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_ram_levels",
+  "parent":{
+    "name":"RAM",
+    "path":"folders/Scripts/Puzzles/RAM.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

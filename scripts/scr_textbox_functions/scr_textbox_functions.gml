@@ -157,6 +157,12 @@ function scr_text(_text){
 			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
 			    snd[page_number] = snd_voice_npc_tutorealis;
 			    break;
+				
+			//habitante de memorian
+			case "memoriano":
+			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
+			    snd[page_number] = snd_voice_npc_tutorealis; // provisional, hasta tener una voz propia
+			    break;
 		}
 	}
 	

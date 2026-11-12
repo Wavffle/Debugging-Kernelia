@@ -17,4 +17,4 @@ sprite_walk_side = spr_cloude_walking_right;
 // La máscara de colisión no cambia al cambiar de animación
 mask_index = spr_cloude_idle_front;
 
-text_id = "conversacion_con_cloude";
+text_id = "cloude_ram_vs_disco";

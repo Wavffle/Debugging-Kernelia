@@ -22,5 +22,5 @@
   "resourceVersion":"2.0",
   "sampleRate":44100,
   "soundFile":"snd_voice_protagonista.ogg",
-  "volume":0.3,
+  "volume":0.2,
 }
