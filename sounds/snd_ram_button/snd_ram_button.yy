@@ -1,0 +1,26 @@
+{
+  "$GMSound":"v2",
+  "%Name":"snd_ram_button",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "channelFormat":0,
+  "compression":0,
+  "compressionQuality":4,
+  "conversionMode":0,
+  "duration":0.023537414,
+  "exportDir":"",
+  "name":"snd_ram_button",
+  "parent":{
+    "name":"Minijuego_RAM",
+    "path":"folders/Sounds/Minijuego_RAM.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"snd_ram_button.ogg",
+  "volume":1.0,
+}

@@ -1,0 +1,26 @@
+{
+  "$GMSound":"v2",
+  "%Name":"snd_ram_move",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "channelFormat":0,
+  "compression":0,
+  "compressionQuality":4,
+  "conversionMode":0,
+  "duration":0.03292517,
+  "exportDir":"",
+  "name":"snd_ram_move",
+  "parent":{
+    "name":"Minijuego_RAM",
+    "path":"folders/Sounds/Minijuego_RAM.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"snd_ram_move.ogg",
+  "volume":1.0,
+}

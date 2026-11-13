@@ -121,7 +121,7 @@
   "name":"fnt_title",
   "parent":{
     "name":"Fonts",
-    "path":"folders/Sprites/UI/Fonts.yy",
+    "path":"folders/Fonts.yy",
   },
   "pointRounding":0,
   "ranges":[
