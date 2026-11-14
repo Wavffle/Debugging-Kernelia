@@ -25,6 +25,10 @@ btn_c_down = false;
 btn_r_down = false;
 btn_shake = 0;
 board_shake = 0;
+hold_dir = 0;      // dirección que se está manteniendo apretada (-1, 0, 1)
+hold_t = 0;        // frames que lleva apretada
+hold_delay = 14;   // espera antes de empezar a repetir (unos 0.25 s)
+hold_rate = 4;     // cada cuántos frames se mueve una celda al mantener
 tick_flash = 0;         // destello de los procesos temporales al pasar el turno
 pin_t = 0;          // animación de los contactos dorados al compactar
 pin_t_total = 40;   // duración en frames
@@ -34,7 +38,7 @@ dot_t = 0;          // rebote del punto de nivel al ganar
 busy_timer = 0;
 pulse = false;
 dead_end = false;
-dead_msg = "Este camino ya no tiene salida. Mejor reintentamos.";
+dead_msg = "Ningún bloque alcanza y no se puede compactar más: esta asignación no tiene salida. Probemos otra distribución.";
 msg = "";
 state = "play";
 
@@ -43,7 +47,6 @@ qcell_h = 34;           // alto de los bloques de la cola
 emo = "normal";         // emoción actual de Gepe-T
 emo_base = "normal";    // emoción a la que vuelve
 emo_timer = 0;
-talk_timer = 0;         // mientras es > 0, Gepe-T mueve la boca
 
 // --- Máquina de escribir de Gepe-T (misma lógica que obj_textbox) ---
 msg_full = "";          // texto con los saltos de línea ya puestos
@@ -76,6 +79,14 @@ free_count = function() {
         if (mem[i] == -1) _n++;
     }
     return _n;
+}
+
+// ¿Cabe un proceso de tamaño _z en algún hueco de la memoria?
+any_fit = function(_z) {
+    for (var s = 0; s + _z <= RAM_CELLS; s++) {
+        if (fits(mem, s, _z)) return true;
+    }
+    return false;
 }
 
 // --- ¿Caben _z celdas libres seguidas desde _s? ---
@@ -147,38 +158,6 @@ place_state = function(_st, _start) {
         }
     }
     return { m: _m, q: _q, c: _st.c };
-}
-
-state_key = function(_st) {
-    var _k = "";
-    for (var i = 0; i < RAM_CELLS; i++) _k += string(_st.m[i]) + ",";
-    return _k + "|" + string(array_length(_st.q)) + "|" + string(_st.c);
-}
-
-// --- ¿Se puede ganar desde este estado? (prueba todas las jugadas posibles) ---
-solvable = function(_st, _memo) {
-    if (array_length(_st.q) == 0) return true;
-
-    var _key = state_key(_st);
-    if (variable_struct_exists(_memo, _key)) return variable_struct_get(_memo, _key);
-    variable_struct_set(_memo, _key, false);
-
-    var _z = procs[_st.q[0]].size;
-    for (var s = 0; s + _z <= RAM_CELLS; s++) {
-        if (fits(_st.m, s, _z) && solvable(place_state(_st, s), _memo)) {
-            variable_struct_set(_memo, _key, true);
-            return true;
-        }
-    }
-
-    if (_st.c > 0) {
-        var _cm = compact_array(_st.m);
-        if (!arrays_equal(_cm, _st.m) && solvable({ m: _cm, q: _st.q, c: _st.c - 1 }, _memo)) {
-            variable_struct_set(_memo, _key, true);
-            return true;
-        }
-    }
-    return false;
 }
 
 // --- Actualiza la posición visual de cada proceso según la memoria ---
@@ -313,13 +292,10 @@ place_selected = function() {
 	    audio_play_sound(snd_ram_error, 1, false);
 	    flash_emo("error", 30); // reacciona con la cara, sin hablar
 
-	    var _any = false;
-	    for (var s = 0; s + _z <= RAM_CELLS; s++) {
-	        if (fits(mem, s, _z)) _any = true;
-	    }
+	    var _any = any_fit(_z);
 	    var _free = free_count();
 	    // Solo explica la fragmentación la primera vez de cada nivel
-	    if (!_any && _free >= _z) tell_once("frag", "Hay " + string(_free) + " espacios libres, pero no están juntos. Un proceso necesita todo su espacio seguido.", "error", true);
+	    if (!_any && _free >= _z) tell_once("frag", "Hay " + string(_free) + " celdas libres, pero no son contiguas. Un proceso necesita un bloque continuo.", "error", true);
 	    return;
 	}
 
@@ -353,7 +329,7 @@ place_selected = function() {
     for (var e = 0; e < array_length(data.leave); e++) {
         if (data.leave[e].after == _placed) {
             _released = true;
-            tell_once("release", "¡Algunos procesos terminaron y liberaron su espacio! Mira cómo quedó la memoria.", "normal");
+            tell_once("release", "Algunos procesos terminaron y liberaron su memoria. Fíjate en los huecos que quedaron.", "normal");
         }
     }
 
@@ -378,24 +354,20 @@ place_selected = function() {
 // --- ¿Ganó, quedó sin salida o necesita compactar? ---
 check_state = function() {
     if (array_length(queue) == 0) {
-    state = "win";
-    dot_t = 30;
-    audio_play_sound(snd_ram_win, 10, false);
-    return;
-	}
+        state = "win";
+        dot_t = 30;
+        audio_play_sound(snd_ram_win, 10, false);
+        return;
+    }
 
     dead_end = false;
     var _z = procs[queue[0]].size;
-    var _fits = false;
-    for (var s = 0; s + _z <= RAM_CELLS; s++) {
-        if (fits(mem, s, _z)) _fits = true;
-    }
-    if (_fits) return; // hay dónde colocarlo: se sigue jugando
+    if (any_fit(_z)) return; // hay dónde colocarlo: se sigue jugando
 
     // No cabe en ningún lado: ¿queda una compactación que cambie algo?
     var _can_compact = (comp_left > 0 && !arrays_equal(compact_array(mem), mem));
     if (!_can_compact) {
-        if (!dead_end) audio_play_sound(snd_ram_deadend, 5, false);
+        audio_play_sound(snd_ram_deadend, 5, false);
         dead_end = true;
         set_msg(dead_msg, "serio");
         return;
@@ -403,7 +375,7 @@ check_state = function() {
 
     // Aún se puede compactar: se avisa y parpadea el botón
     audio_play_sound(snd_ram_alert, 5, false);
-    tell_once("alert", "Ningún hueco alcanza para el proceso de tamaño " + string(_z) + ": hay " + string(free_count()) + " celdas libres, pero repartidas. Prueba a compactar (C).", "normal", true);
+    tell_once("alert", "Ningún hueco alcanza para el proceso de tamaño " + string(_z) + ": hay " + string(free_count()) + " celdas libres, pero fragmentadas. La compactación las uniría en un solo bloque.", "normal", true);
     pulse = true;
 }
 
@@ -421,7 +393,7 @@ compact_memory = function() {
     if (arrays_equal(_new, mem)) {
         btn_shake = 12;
         audio_play_sound(snd_ram_denied, 1, false);
-        set_msg("No hay nada que compactar: los procesos ya están juntos.", "error");
+        set_msg("No hay nada que reubicar: los procesos ya están contiguos.", "error");
         return;
     }
 
@@ -438,8 +410,8 @@ compact_memory = function() {
 	pin_t = pin_t_total;
     audio_play_sound(snd_ram_compact, 1, false);
 
-    if (_has_fixed) tell_once("compact_fixed", "Compactación lista. Las celdas del sistema no se movieron: solo se juntó lo que hay entre ellas.", "normal");
-	else tell_once("compact", "¡Mira cómo se juntan! Ahora el espacio libre está todo seguido.", "normal");
+    if (_has_fixed) tell_once("compact_fixed", "Compactación hecha. La memoria reservada del sistema no se reubica.", "normal");
+	else tell_once("compact", "Compactación hecha: los procesos se reubicaron y el espacio libre quedó en un solo bloque contiguo.", "normal");
     flash_emo("feliz", 60);
 }
 
@@ -528,6 +500,372 @@ tell_once = function(_key, _txt, _emo, _each_level = false) {
     if (variable_struct_exists(told, _k)) return;
     variable_struct_set(told, _k, true);
     set_msg(_txt, _emo);
+}
+
+// --- Actualización por frame (las usa el evento Step) ---
+update_typewriter = function() {
+    if (msg_pause_timer > 0) {
+        msg_pause_timer--;
+        return;
+    }
+    if (msg_char >= msg_len) return;
+
+    msg_acc += msg_spd;
+    while (msg_acc >= 1 && msg_char < msg_len) {
+        msg_acc--;
+        msg_char++;
+        var _c = string_char_at(msg_full, msg_char);
+
+        if (_c == "." || _c == "?" || _c == "!" || _c == ",") {
+            msg_pause_timer = msg_pause_time;
+            // Los puntos de unos puntos suspensivos no suenan
+            var _ell = (_c == "." && (string_char_at(msg_full, msg_char - 1) == "." || string_char_at(msg_full, msg_char + 1) == "."));
+            if (!_ell && !audio_is_playing(snd_voice_gepet)) gepet_voice();
+            break; // la pausa corta el avance de este frame
+        }
+        if (_c == "\n") continue;
+
+        if (msg_snd_count < msg_snd_delay) msg_snd_count++;
+        else {
+            msg_snd_count = 0;
+            gepet_voice();
+        }
+    }
+}
+
+update_timers = function() {
+    if (btn_shake > 0) btn_shake--;
+    if (tick_flash > 0) tick_flash--;
+    if (board_shake > 0) board_shake--;
+    if (pin_t > 0) pin_t--;
+    if (dot_t > 0) dot_t--;
+
+    if (emo_timer > 0) {
+        emo_timer--;
+        if (emo_timer == 0) emo = emo_base;
+    }
+}
+
+// Los procesos se deslizan a su sitio y la cola a su lugar
+update_slides = function() {
+    for (var i = 0; i < array_length(procs); i++) {
+        var _p = procs[i];
+        if (_p.pop > 0) _p.pop--;
+        if (_p.slot == -1) continue;
+
+        _p.dx = lerp(_p.dx, _p.slot, 0.15);
+        if (abs(_p.dx - _p.slot) < 0.02) _p.dx = _p.slot;
+
+        // Estela mientras se compacta
+        if (busy_timer > 0 && abs(_p.dx - _p.slot) > 0.1) {
+            spawn_parts(cell_x0 + (_p.dx + _p.size) * cell_w, cell_y0 + 8, 4, cell_h - 16, 1, block_colors[_p.k mod 8]);
+        }
+    }
+
+    var _qtx = queue_x + 22;
+    for (var i = 0; i < array_length(queue); i++) {
+        var _qp = procs[queue[i]];
+        _qp.qx = lerp(_qp.qx, _qtx, 0.25);
+        if (abs(_qp.qx - _qtx) < 0.3) _qp.qx = _qtx;
+        _qtx += _qp.size * qcell_w + 6;
+    }
+}
+
+// Mueve las partículas y borra las que terminaron
+update_particles = function() {
+    for (var i = array_length(parts) - 1; i >= 0; i--) {
+        var _q = parts[i];
+        _q.x += _q.vx;
+        _q.y += _q.vy;
+        _q.vy += 0.04; // caen un poco
+        _q.life++;
+        if (_q.life >= _q.max_life) array_delete(parts, i, 1);
+    }
+}
+
+// Transición entre niveles. Devuelve true mientras dura (sin input)
+update_fade = function() {
+    if (fade_dir == 1) {
+        fade_alpha = min(1, fade_alpha + fade_speed);
+        if (fade_alpha >= 1) {
+            load_level(fade_next);
+            audio_play_sound(snd_ram_levelstart, 5, false);
+            fade_dir = -1;
+        }
+    }
+    else if (fade_dir == -1) {
+        fade_alpha = max(0, fade_alpha - fade_speed);
+        if (fade_alpha <= 0) fade_dir = 0;
+    }
+    return fade_dir != 0;
+}
+
+// Cursor: da la vuelta y se repite al mantener apretado
+move_cursor = function() {
+    var _hi = RAM_CELLS - ((array_length(queue) > 0) ? procs[queue[0]].size : 1); // el proceso entero dentro del tablero
+    var _count = _hi + 1;
+    cur = clamp(cur, 0, _hi); // por si el siguiente proceso tiene otro tamaño
+
+    var _dir = (keyboard_check(vk_right) || keyboard_check(ord("D"))) - (keyboard_check(vk_left) || keyboard_check(ord("A")));
+    var _move = 0;
+    if (_dir == 0) {
+        hold_t = 0;
+    }
+    else if (_dir != hold_dir) {
+        hold_t = 0;                    // pulsación nueva: se mueve una celda
+        _move = _dir;
+    }
+    else {
+        hold_t++;                      // se mantiene apretado
+        if (hold_t >= hold_delay && (hold_t - hold_delay) mod hold_rate == 0) _move = _dir;
+    }
+    hold_dir = _dir;
+
+    if (_move != 0) {
+        cur = (cur + _move + _count) mod _count;
+        // Suena en la pulsación y en una de cada dos repeticiones, para no saturar
+        if (hold_t == 0 || ((hold_t - hold_delay) div hold_rate) mod 2 == 0) play_sfx(snd_ram_move, 0.9 + cur * 0.03, 0.01);
+    }
+}
+
+// Colocar (Z) y botones Compactar (C) y Reiniciar (R): se hunden al apretar y actúan al soltar
+play_input = function(_accept) {
+    if (_accept) place_selected();
+
+    if (keyboard_check_pressed(ord("C"))) {
+        if (comp_left <= 0) deny_compact();
+        else { btn_c_down = true; audio_play_sound(snd_ram_button, 5, false); }
+    }
+    if (btn_c_down && keyboard_check_released(ord("C"))) {
+        btn_c_down = false;
+        compact_memory();
+    }
+
+    if (keyboard_check_pressed(ord("R"))) { btn_r_down = true; play_sfx(snd_ram_button, 1.1, 0.02); }
+    if (btn_r_down && keyboard_check_released(ord("R"))) {
+        btn_r_down = false;
+        load_level(level);
+    }
+}
+
+// --- Dibujo (las usa el evento Draw GUI) ---
+shake_offset = function(_t) {
+    if (_t <= 0) return 0;
+    return ((_t div 2) mod 2 == 0) ? -2 : 2;
+}
+
+// Pantalla oscurecida con alpha _alpha
+gui_shade = function(_alpha) {
+    draw_set_alpha(_alpha);
+    draw_set_colour(c_black);
+    draw_rectangle(0, 0, 480, 270, false);
+    draw_set_alpha(1);
+    draw_set_colour(c_white);
+}
+
+// Fondo, placa y brillo recorriendo los contactos dorados al compactar
+gui_board = function() {
+    draw_sprite(spr_ram_bg, 0, 0, 0);
+    draw_sprite(spr_ram_board, 0, board_x, board_y);
+
+    if (pin_t > 0) {
+        var _bw = sprite_get_width(spr_ram_board);
+        var _ww = 48; // ancho de la franja de luz
+        var _pos = lerp(-_ww, _bw, 1 - pin_t / pin_t_total);
+        gpu_set_blendmode(bm_add);
+        for (var _s = 0; _s < _ww; _s += 4) {
+            var _lx = _pos + _s;
+            if (_lx < 0 || _lx + 4 > _bw) continue;
+            var _al = sin(pi * (_s + 2) / _ww) * 0.8; // más fuerte al centro de la franja
+            draw_sprite_part_ext(spr_ram_board, 0, _lx, pin_y, 4, pin_h, board_x + _lx, board_y + pin_y, 1, 1, c_white, _al);
+        }
+        gpu_set_blendmode(bm_normal);
+    }
+}
+
+// Título y nombre del nivel
+gui_title = function() {
+    var _lvl = "Nivel " + string(level + 1) + " :";
+    var _name = " " + data.name;
+    var _tw = string_width(_lvl) + 1 + string_width(_name) + 16; // +1 por la negrita
+    draw_sprite_stretched(spr_ram_level, 0, 32, 4, _tw, 18);
+
+    draw_set_colour(make_colour_rgb(126, 248, 203));
+    draw_text(40, 5, _lvl);
+    draw_text(41, 5, _lvl); // segunda pasada: negrita falsa
+    draw_set_colour(c_white);
+    draw_text(41 + string_width(_lvl), 5, _name);
+}
+
+// Celdas, procesos, reservas del sistema, cursor y partículas
+gui_memory = function() {
+    for (var c = 0; c < RAM_CELLS; c++) {
+        draw_sprite(spr_ram_cell_free, 0, cell_x0 + c * cell_w, cell_y0);
+    }
+
+    for (var i = 0; i < array_length(procs); i++) {
+        var _p = procs[i];
+        if (_p.slot == -1) continue;
+        var _px = cell_x0 + _p.dx * cell_w;
+        if (!_p.fixed) {
+            draw_block(_px, cell_y0, _p, 1);
+        }
+        else if (_p.size == 2) {
+            draw_sprite(spr_ram_cell_system_x2, 0, _px, cell_y0);
+        }
+        else {
+            for (var t = 0; t < _p.size; t++) draw_sprite(spr_ram_cell_system, 0, _px + t * cell_w, cell_y0);
+        }
+    }
+
+    // Cursor: verde si el proceso cabe desde aquí, rojo si no
+    if (state == "play" && array_length(queue) > 0) {
+        var _z = procs[queue[0]].size;
+        var _frame = (busy_timer > 0 || !fits(mem, cur, _z)) ? 1 : 0;
+        var _csh = shake_offset(board_shake);
+        for (var j = max(cur, 0); j < cur + _z && j < RAM_CELLS; j++) {
+            var _ca = (mem[j] != -1) ? 0.35 : 1; // sobre un proceso: se ve lo de abajo
+            draw_sprite_ext(spr_ram_cell_cursor, _frame, cell_x0 + j * cell_w + _csh, cell_y0, 1, 1, 0, c_white, _ca);
+        }
+    }
+
+    for (var i = 0; i < array_length(parts); i++) {
+        var _q = parts[i];
+        var _pf = floor(_q.life / _q.max_life * sprite_get_number(spr_ram_particle));
+        draw_sprite_ext(spr_ram_particle, _pf, floor(_q.x), floor(_q.y), 1, 1, 0, _q.col, 1);
+    }
+}
+
+// Barra de estado (total 10 = 8 usables + 2 del sistema)
+gui_status = function() {
+    var _free = free_count();
+    var _txt = ["Memoria total: " + string(RAM_CELLS), "Usada: " + string(RAM_CELLS - _free), "Libre: " + string(_free), "Compactaciones: " + string(comp_left)];
+    draw_sprite_stretched(spr_ram_status_panel, 0, 32, 115, 416, 16);
+    draw_set_font(fnt_main_small);
+    draw_set_valign(fa_middle);
+
+    var _col_w = 416 / 4;
+    var _iw = sprite_get_width(spr_ram_status_icons);
+    var _gap = 5; // espacio entre icono y texto
+    for (var i = 0; i < 4; i++) {
+        var _gw = _iw + _gap + string_width(_txt[i]);
+        var _gx = floor(32 + _col_w * i + _col_w / 2 - _gw / 2);
+        draw_sprite(spr_ram_status_icons, i, _gx, 118);
+        draw_text(_gx + _iw + _gap, 123, _txt[i]);
+    }
+
+    // Separadores verticales ligeros entre columnas
+    draw_set_alpha(0.3);
+    for (var i = 1; i < 4; i++) {
+        var _sx = floor(32 + _col_w * i);
+        draw_rectangle(_sx, 119, _sx, 127, false);
+    }
+    draw_set_alpha(1);
+
+    draw_set_font(global.font_main);
+    draw_set_valign(fa_top);
+}
+
+// Cola de entrada: se ve toda, pero solo el primero se puede usar
+gui_queue = function() {
+    var _qy = 140;
+    draw_sprite_stretched(spr_ram_queue_panel, 0, queue_x, 134, 416, 46);
+    for (var i = 0; i < array_length(queue); i++) {
+        var _p = procs[queue[i]];
+        var _qx = floor(_p.qx);
+        draw_queue_block(_qx, _qy, _p, (i == 0) ? 1 : 0.55);
+        if (i == 0) {
+            var _w = _p.size * qcell_w;
+            var _sf = floor(current_time / 1000 * 6) mod sprite_get_number(spr_ram_queue_select);
+            draw_sprite_stretched(spr_ram_queue_select, _sf, _qx - 3, _qy - 3, _w + 6, qcell_h + 6);
+            // Flecha que apunta al primero (4 frames)
+            var _af = floor(current_time / 1000 * 8) mod sprite_get_number(spr_ram_queue_next);
+            draw_sprite(spr_ram_queue_next, _af, _qx + floor(_w / 2) - 4, _qy - 10);
+        }
+    }
+}
+
+// Botones Compactar y Reiniciar, y la ayuda de teclas
+gui_buttons = function() {
+    var _cf = 0;
+    if (comp_left <= 0) _cf = 2;
+    else if (btn_c_down || (pulse && (current_time div 300) mod 2 == 0)) _cf = 1;
+
+    var _sx = shake_offset(btn_shake);
+    var _cy = btn_c_down ? 2 : 0;
+    var _ry = btn_r_down ? 2 : 0;
+
+    // Sombras (desaparecen cuando el botón está hundido)
+    if (!btn_c_down) draw_sprite_stretched_ext(spr_ram_button, 0, 32 + _sx, 186, 100, 20, c_black, 0.5);
+    if (!btn_r_down) draw_sprite_stretched_ext(spr_ram_button, 0, 140, 186, 90, 20, c_black, 0.5);
+
+    draw_sprite_stretched(spr_ram_button, _cf, 32 + _sx, 184 + _cy, 100, 20);
+    draw_sprite_stretched(spr_ram_button, btn_r_down ? 1 : 0, 140, 184 + _ry, 90, 20);
+
+    // Iconos y textos (se hunden junto con los botones)
+    draw_set_halign(fa_center);
+    draw_set_valign(fa_middle);
+    draw_sprite_ext(spr_ram_icon_compact, 0, 45 + _sx, 187 + _cy, 1, 1, 0, c_white, (comp_left <= 0) ? 0.5 : 1); // se apaga sin compactaciones
+    draw_sprite(spr_ram_icon_restart, 0, 154, 187 + _ry);
+    draw_text(91 + _sx, 193 + _cy, "Compactar");
+    draw_text(195, 193 + _ry, "Reiniciar");
+    draw_set_valign(fa_top);
+    draw_set_halign(fa_left);
+
+    draw_set_font(fnt_main_small);
+    var _x2 = 240 + max(string_width("A/D mover"), string_width("C compactar")) + 12; // segunda columna, con 12 px de separación
+    draw_text(240, 183, "A/D Mover");
+    draw_text(240, 193, "C Compactar");
+    draw_text(_x2, 183, "Z Colocar");
+    draw_text(_x2, 193, "R Reiniciar");
+    draw_set_font(global.font_main);
+}
+
+// Gepe-T: cara con emoción a la izquierda y mensaje a la derecha
+gui_gepet = function() {
+    draw_sprite_stretched(spr_dialogue_box_gepet, 0, 32, 210, 416, 52);
+    var _spr = spr_ram_gepet_normal; // "feliz" usa por ahora el mismo sprite que "normal"
+    if (emo == "error") _spr = spr_ram_gepet_error;
+    else if (emo == "serio") _spr = spr_ram_gepet_serio;
+    var _talking = (msg_char < msg_len) && (msg_pause_timer <= 0);
+    var _f = _talking ? (floor(current_time / 1000 * 6) mod sprite_get_number(_spr)) : 0; // boca abierta/cerrada a 6 fps
+    draw_sprite(_spr, _f, 36, 211);
+    draw_text_ext(90, 216, string_copy(msg_full, 1, msg_char), 12, 1000);
+}
+
+// Pantallas de victoria y final
+gui_end = function() {
+    gui_shade(0.75);
+    draw_sprite_stretched(spr_ram_queue_panel, 0, 60, 60, 360, 150);
+    draw_set_halign(fa_center);
+
+    var _title, _body, _foot;
+    if (state == "win") {
+        _title = "¡Nivel completado!";
+        _body = data.win + "\nAprendiste: " + data.learn;
+        _foot = "Z: continuar";
+    } else {
+        _title = "Memorian vuelve a funcionar";
+        _body = "¡Gracias por ordenar la memoria!";
+        _foot = "Z: salir";
+    }
+    draw_text(240, 70, _title);
+    draw_text_ext(240, 92, _body, 12, 330);
+    draw_text(240, 190, _foot);
+    draw_set_halign(fa_left);
+}
+
+// Puntos de nivel (van encima de la pantalla oscura de victoria)
+gui_dots = function() {
+    for (var i = 0; i < RAM_LEVELS; i++) {
+        var _df = (i < level) ? 2 : ((i == level) ? 1 : 0); // completado, actual, pendiente
+        var _dy = 0;
+        if (i == level && state != "play") {
+            _df = 2; // el nivel recién ganado ya se ve completado
+            _dy = -floor(abs(sin((30 - dot_t) * 0.35)) * 6 * (dot_t / 30)); // rebote que se apaga
+        }
+        draw_sprite(spr_ram_level_dot, _df, 331 + i * 15, 8 + _dy);
+    }
 }
 
 load_level(0);

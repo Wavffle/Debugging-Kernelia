@@ -1,4 +1,3 @@
-follow_dist = 18; // distancia en píxeles detrás del jugador
 catchup_speed = 2.2;   // velocidad máxima para alcanzarte si se queda atrás
 facing_dir = "down";
 

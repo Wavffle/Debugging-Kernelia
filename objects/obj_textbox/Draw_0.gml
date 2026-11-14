@@ -238,7 +238,7 @@ if (draw_char == text_length[page] && page < page_number - 1) {
 
 
 //------------------------options------------------------//
-if (draw_char == text_length[page] && page == page_number - 1) {
+if (option_number > 0 && draw_char == text_length[page] && page == page_number - 1) {
 	
 	//option selection
 	var _old_option_pos = option_pos;

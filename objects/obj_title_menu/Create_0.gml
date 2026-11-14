@@ -52,33 +52,6 @@ shadow_grad_col = make_colour_rgb(14, 22, 38); // sombra más oscura, solo para 
 grad_white = c_white;
 grad_cyan  = make_colour_rgb(55, 231, 222); // #37e7de
 
-// Qué parte de la altura de la celda ocupa realmente la letra (0 = arriba, 1 = abajo).
-// Rango más corto = degradado más marcado. Prueba valores entre 0.15 y 0.35 para el
-// primero, y entre 0.65 y 0.85 para el segundo.
-grad_ink_top = 0.2;
-grad_ink_bottom = 0.8;
-
-// Color en un punto del degradado: 0 = blanco, 1 = celeste (admite valores fuera de 0..1)
-grad_color_at = function(_g) {
-    var _r = clamp(lerp(255, 55, _g), 0, 255);
-    var _gr = clamp(lerp(255, 231, _g), 0, 255);
-    var _b = clamp(lerp(255, 222, _g), 0, 255);
-    return make_colour_rgb(_r, _gr, _b);
-}
-
-// Colores de las esquinas, calculados para que el blanco quede arriba de la letra y
-// el celeste abajo, y no en los bordes de la celda
-var _span = grad_ink_bottom - grad_ink_top;
-grad_top    = grad_color_at(-grad_ink_top / _span);
-grad_bottom = grad_color_at((1 - grad_ink_top) / _span);
-
-// _t va de 0 (inicio de la palabra) a 1 (final): blanco -> celeste -> azul
-gradient_color = function(_t) {
-    _t = clamp(_t, 0, 1);
-    if (_t < 0.5) return merge_colour(grad_white, grad_cyan, _t * 2);
-    return merge_colour(grad_cyan, grad_blue, (_t - 0.5) * 2);
-}
-
 // --- Animación del degradado de "Nueva Partida" ---
 grad_scroll_speed = 6; // velocidad: px del GUI por segundo (hacia abajo)
 grad_period = 16;       // alto de un ciclo blanco -> celeste -> blanco (px del GUI)

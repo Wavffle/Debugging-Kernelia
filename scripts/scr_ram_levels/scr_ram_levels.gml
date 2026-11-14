@@ -10,7 +10,7 @@ function scr_ram_level(_n) {
             queue: [1, 2, 2, 3],
             leave: [],
             comp: 0,
-            hint: "Mueve el cursor con A/D y coloca el primer proceso con Z. La celda gris es del sistema: no se puede usar.",
+            hint: "Cada proceso necesita su propio bloque de memoria. Colócalo en un espacio libre; la celda gris la reserva el sistema.",
             win: "¡Todo cargado! La RAM se llenó. La memoria es limitada: los procesos nuevos deben esperar a que haya espacio libre.",
             learn: "Memoria libre y ocupada"
         };
@@ -20,7 +20,7 @@ function scr_ram_level(_n) {
             queue: [3, 2, 1],
             leave: [],
             comp: 0,
-            hint: "El proceso ocupa las celdas que cubre el cursor. Verde: cabe. Rojo: no cabe. Aquí no sobra nada.",
+            hint: "Un proceso ocupa tantas celdas como su tamaño. Verde: el bloque libre alcanza. Rojo: no alcanza. Aquí no sobra nada.",
             win: "Un proceso necesita memoria contigua: no basta con que existan espacios libres, tienen que estar juntos.",
             learn: "Memoria contigua"
         };
@@ -40,7 +40,7 @@ function scr_ram_level(_n) {
             queue: [1, 3, 2],
             leave: [],
             comp: 1,
-            hint: "Coloca el primer proceso y mira si el siguiente, de tamaño 3, cabe en algún lado.",
+            hint: "Hay celdas libres, pero ¿forman un bloque contiguo de tamaño 3? Coloca el primer proceso y compruébalo.",
             win: "Compactar mueve los procesos para juntar toda la memoria libre en un solo bloque. Así el proceso grande por fin cabe.",
             learn: "Compactación"
         };
@@ -50,7 +50,7 @@ function scr_ram_level(_n) {
             queue: [1, 2, 3],
             leave: [],
             comp: 1,
-            hint: "El sistema reservó una celda en medio. Compacta (C) y observa que esa celda no se mueve.",
+            hint: "El sistema reservó una celda en medio de la memoria. Al compactar, esa celda no se reubica: observa qué pasa.",
             win: "La memoria reservada del sistema no se mueve al compactar. Divide la memoria en zonas, y el espacio libre solo se junta dentro de cada zona.",
             learn: "Memoria reservada"
         };
@@ -60,7 +60,7 @@ function scr_ram_level(_n) {
             queue: [1, 2, 2],
             leave: [],
             comp: 1,
-            hint: "Hay tres zonas y una sola compactación. Piensa en qué zona conviene colocar el proceso de tamaño 1.",
+            hint: "Hay tres zonas y una sola compactación. Decide en qué zona asignar el proceso de tamaño 1.",
             win: "Planificar es decidir dónde va cada proceso antes de compactar, porque las zonas reservadas limitan lo que se puede reorganizar.",
             learn: "Planificación"
         };
@@ -70,7 +70,7 @@ function scr_ram_level(_n) {
             queue: [1, 2, 2, 1],
             leave: [{ after: 2, ids: [1, 3] }],
             comp: 2,
-            hint: "Tienes dos compactaciones y las dos hacen falta. Cuando un proceso termina, el espacio vuelve a quedar roto.",
+            hint: "Cada vez que un proceso termina, el espacio libre vuelve a fragmentarse. Las dos compactaciones harán falta.",
             win: "Cada vez que terminan procesos, la memoria puede fragmentarse de nuevo. Compactar se hace cuando hace falta, no una sola vez.",
             learn: "Fragmentación repetida"
         };
@@ -80,7 +80,7 @@ function scr_ram_level(_n) {
             queue: [1, 2, 2],
             leave: [{ after: 2, ids: [3, 4] }],
             comp: 2,
-            hint: "Dos celdas reservadas y dos compactaciones. Decide cuándo compactar y cuándo esperar.",
+            hint: "Dos celdas reservadas y dos compactaciones. Decide cuándo reubicar los procesos y cuándo esperar.",
             win: "¡Lo lograste! Asignar, fragmentar, compactar y planificar: así administra la memoria un sistema operativo.",
             learn: "Asignación, fragmentación, compactación y planificación"
         };

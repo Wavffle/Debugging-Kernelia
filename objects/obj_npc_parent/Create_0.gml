@@ -1,5 +1,4 @@
 // --- Datos generales de cualquier NPC ---
-npc_name = "NPC";
 facing_dir = "down";
 
 // Cada NPC hijo define sus propios sprites (ver obj_gepet)
@@ -29,18 +28,6 @@ face_direction = function(_dir) {
 
     sprite_index = _spr;
     image_xscale = _flip;
-}
-
-// --- Mirar hacia un punto (respaldo, por si no se conoce la dirección) ---
-face_towards = function(_target_x, _target_y) {
-    var dx = _target_x - x;
-    var dy = _target_y - y;
-
-    if (abs(dx) > abs(dy)) {
-        face_direction((dx > 0) ? "right" : "left");
-    } else {
-        face_direction((dy > 0) ? "down" : "up");
-    }
 }
 
 // --- Diálogo ---

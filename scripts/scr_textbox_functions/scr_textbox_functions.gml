@@ -146,13 +146,7 @@ function scr_text(_text){
 				
 			//npc de tutorealis
 			case "npc-1":
-			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
-			    snd[page_number] = snd_voice_npc_tutorealis;
-			    break;
 			case "npc-2":
-			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
-			    snd[page_number] = snd_voice_npc_tutorealis;
-			    break;
 			case "npc-3":
 			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
 			    snd[page_number] = snd_voice_npc_tutorealis;
@@ -161,7 +155,7 @@ function scr_text(_text){
 			//habitante de memorian
 			case "memoriano":
 			    txtb_spr[page_number] = spr_dialogue_box_protagonista;
-			    snd[page_number] = snd_voice_npc_tutorealis; // provisional, hasta tener una voz propia
+			    snd[page_number] = snd_voice_npc_memorian;
 			    break;
 		}
 	}
@@ -195,3 +189,4 @@ function create_textbox(_text_id){
 		scr_game_text(_text_id);
 	}
 }
+
