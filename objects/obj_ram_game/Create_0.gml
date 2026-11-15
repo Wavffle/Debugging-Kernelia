@@ -39,6 +39,8 @@ busy_timer = 0;
 win_t = 0;          // espera antes de mostrar la pantalla de nivel completado
 q_in_t = 0;           // frames desde que empezó el nivel (entrada de la cola)
 show_preview = true;  // vista previa del bloque bajo el cursor (pon false para quitarla)
+preview_a = 0;
+show_marks_level = 0; // las marcas de posiciones válidas se muestran hasta este nivel (0 = solo el primero, -1 = nunca)
 fly_frames = 8;     // duración del viaje del bloque desde la cola hasta su celda
 title_t = 20;        // entrada deslizante del título del nivel
 pulse = false;
@@ -271,7 +273,7 @@ load_level = function(_n) {
 	var _tx = queue_x + 22;
 	for (var i = 0; i < array_length(queue); i++) {
 	    procs[queue[i]].qx = _tx;
-		procs[queue[i]].qdelay = i * 6; // cada bloque entra 6 frames después del anterior
+			    procs[queue[i]].qdelay = i * 8; // cada bloque entra 8 frames después del anterior
 	    _tx += procs[queue[i]].size * qcell_w + 6;
 	}
     comp_left = data.comp;
@@ -547,6 +549,8 @@ update_timers = function() {
     if (title_t > 0) title_t--;
     if (jump_t > 0) jump_t--;
 	if (q_in_t < 200) q_in_t++;
+	
+	if (array_length(queue) > 0) preview_a = lerp(preview_a, fits(mem, cur, procs[queue[0]].size) ? 0.45 : 0, 0.2);
 
     // Nivel completado: se muestra cuando el último bloque ya aterrizó
     if (win_t > 0) {
@@ -750,16 +754,16 @@ gui_memory = function() {
         }
     }
 
-    // Cursor: verde si el proceso cabe desde aquí, rojo si no
+    // Cursor: verde si el proceso cabe desde aquí, rojo si no; el proceso se ve siempre encima, translúcido
     if (state == "play" && array_length(queue) > 0) {
         var _z = procs[queue[0]].size;
         var _frame = (busy_timer > 0 || !fits(mem, cur, _z)) ? 1 : 0;
         var _csh = shake_offset(board_shake);
-		if (show_preview && busy_timer <= 0 && fits(mem, cur, _z)) draw_block(cell_x0 + cur * cell_w + _csh, cell_y0, procs[queue[0]], 0.45);
         for (var j = max(cur, 0); j < cur + _z && j < RAM_CELLS; j++) {
             var _ca = (mem[j] != -1) ? 0.35 : 1; // sobre un proceso: se ve lo de abajo
             draw_sprite_ext(spr_ram_cell_cursor, _frame, cell_x0 + j * cell_w + _csh, cell_y0, 1, 1, 0, c_white, _ca);
         }
+                if (show_preview && busy_timer <= 0 && preview_a > 0.02) draw_block(cell_x0 + cur * cell_w + _csh, cell_y0, procs[queue[0]], preview_a);
     }
 
     for (var i = 0; i < array_length(parts); i++) {
@@ -805,9 +809,10 @@ gui_queue = function() {
     draw_sprite_stretched(spr_ram_queue_panel, 0, queue_x, 134, 416, 46);
     for (var i = 0; i < array_length(queue); i++) {
         var _p = procs[queue[i]];
+        var _qa = queue_in_alpha(_p);
         var _qx = floor(_p.qx) + queue_in_offset(_p);
-        draw_queue_block(_qx, _qy, _p, (i == 0) ? 1 : 0.55);
-        if (i == 0) {
+        draw_queue_block(_qx, _qy, _p, ((i == 0) ? 1 : 0.55) * _qa);
+        if (i == 0 && _qa >= 1) {
             var _w = _p.size * qcell_w;
             var _sf = floor(current_time / 1000 * 6) mod sprite_get_number(spr_ram_queue_select);
             draw_sprite_stretched(spr_ram_queue_select, _sf, _qx - 3, _qy - 3, _w + 6, qcell_h + 6);
@@ -988,11 +993,16 @@ gui_bg_pulses = function() {
 // Desplazamiento horizontal de un bloque de la cola mientras entra al empezar el nivel
 queue_in_offset = function(_p) {
     var _t = q_in_t - _p.qdelay;
-    if (_t >= 28) return 0;
-    if (_t < 0) return 480;                                        // todavía no entra
-    if (_t < 14) return floor(480 * power(1 - _t / 14, 3));        // llega rápido desde la derecha
-    var _v = (_t - 14) / 14;
-    return round(-6 * sin(_v * 2 * pi) * (1 - _v));                // choca, rebota y se acomoda
+    if (_t >= 44) return 0;
+    if (_t < 0) return 40;                                  // todavía no entra
+    if (_t < 24) return floor(40 * power(1 - _t / 24, 3));  // se desliza suave desde su derecha
+    var _v = (_t - 24) / 20;
+    return round(-3 * sin(_v * 2 * pi) * (1 - _v));         // pequeño rebote al acomodarse
+}
+
+// Opacidad de un bloque de la cola mientras entra: aparece mientras se desliza
+queue_in_alpha = function(_p) {
+    return clamp((q_in_t - _p.qdelay) / 14, 0, 1);
 }
 
 // Transición entre niveles: la pantalla se apaga por columnas alineadas con las celdas de la RAM
