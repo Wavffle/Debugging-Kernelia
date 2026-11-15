@@ -36,11 +36,19 @@ pin_y = 74;         // fila de spr_ram_board donde empiezan los contactos dorado
 pin_h = 10;         // alto de esa franja
 dot_t = 0;          // rebote del punto de nivel al ganar
 busy_timer = 0;
+win_t = 0;          // espera antes de mostrar la pantalla de nivel completado
+q_in_t = 0;           // frames desde que empezó el nivel (entrada de la cola)
+show_preview = true;  // vista previa del bloque bajo el cursor (pon false para quitarla)
+fly_frames = 8;     // duración del viaje del bloque desde la cola hasta su celda
+title_t = 20;        // entrada deslizante del título del nivel
 pulse = false;
 dead_end = false;
 dead_msg = "Ningún bloque alcanza y no se puede compactar más: esta asignación no tiene salida. Probemos otra distribución.";
 msg = "";
 state = "play";
+
+jump_t = 0;              // frames que Gepe-T salta tras un error
+gepet_jump_frame = 1;    // frame del sprite de error en que salta
 
 qcell_w = 24;           // ancho de una celda en la cola
 qcell_h = 34;           // alto de los bloques de la cola
@@ -241,13 +249,13 @@ load_level = function(_n) {
     for (var i = 0; i < array_length(data.pre); i++) {
         var _s = data.pre[i][0];
         var _z = data.pre[i][1];
-        array_push(procs, { size: _z, k: array_length(procs), slot: -1, dx: 0, fixed: (data.pre[i][2] == 1), leave_after: -1, pop: 0, qx: 0 });
+        array_push(procs, { size: _z, k: array_length(procs), slot: -1, dx: 0, fixed: (data.pre[i][2] == 1), leave_after: -1, pop: 0, qx: 0, fly: 0, fx: 0 });
         for (var j = _s; j < _s + _z; j++) mem[j] = i;
     }
     // Procesos en espera (cola estricta: solo se usa el primero)
     for (var i = 0; i < array_length(data.queue); i++) {
         var _id = array_length(procs);
-        array_push(procs, { size: data.queue[i], k: _id, slot: -1, dx: 0, fixed: false, leave_after: -1, pop: 0, qx: 0 });
+        array_push(procs, { size: data.queue[i], k: _id, slot: -1, dx: 0, fixed: false, leave_after: -1, pop: 0, qx: 0, fly: 0, fx: 0 });
         array_push(queue, _id);
     }
 
@@ -263,6 +271,7 @@ load_level = function(_n) {
 	var _tx = queue_x + 22;
 	for (var i = 0; i < array_length(queue); i++) {
 	    procs[queue[i]].qx = _tx;
+		procs[queue[i]].qdelay = i * 6; // cada bloque entra 6 frames después del anterior
 	    _tx += procs[queue[i]].size * qcell_w + 6;
 	}
     comp_left = data.comp;
@@ -290,7 +299,8 @@ place_selected = function() {
     if (!fits(mem, cur, _z)) {
 	    board_shake = 12;
 	    audio_play_sound(snd_ram_error, 1, false);
-	    flash_emo("error", 30); // reacciona con la cara, sin hablar
+	    flash_emo("error", 64);
+		jump_t = 64;
 
 	    var _any = any_fit(_z);
 	    var _free = free_count();
@@ -309,17 +319,14 @@ place_selected = function() {
     mem = _next.m;
     queue = _next.q;
     sync_slots();
-	procs[_pid].pop = 10;
-
-    // Chispas donde se colocó el proceso
-    spawn_parts(cell_x0 + cur * cell_w, cell_y0, _z * cell_w, cell_h, 10, block_colors[_pid mod 8]);
+	procs[_pid].fly = fly_frames;
+	procs[_pid].fx = floor(procs[_pid].qx);
 
     // Polvo donde un proceso terminó y se fue
     for (var i = 0; i < array_length(_before); i++) {
         var _gp = procs[_before[i]];
         if (_gp.slot == -1) spawn_parts(cell_x0 + _gp.dx * cell_w, cell_y0, _gp.size * cell_w, cell_h, 12, block_colors[_gp.k mod 8]);
     }
-    audio_play_sound(snd_ram_place, 1, false);
     flash_emo("feliz", 45); // acierto
 
     var _placed = total_queue - array_length(queue);
@@ -353,10 +360,8 @@ place_selected = function() {
 
 // --- ¿Ganó, quedó sin salida o necesita compactar? ---
 check_state = function() {
-    if (array_length(queue) == 0) {
-        state = "win";
-        dot_t = 30;
-        audio_play_sound(snd_ram_win, 10, false);
+	if (array_length(queue) == 0) {
+        win_t = fly_frames + 10; // espera a que aterrice el último bloque y termine su rebote
         return;
     }
 
@@ -452,7 +457,7 @@ draw_block = function(_x, _y, _p, _a = 1) {
         draw_text(_cx + 14, _y + 31 + _bounce, string(_steps));
     } else {
         draw_sprite(spr_ram_process_icons, _p.k mod 8, floor(_x + _w / 2 - 8), _y + 13);
-        draw_text(floor(_x + _w / 2), _y + 33, string(_p.size));
+		draw_text(floor(_x + _w / 2) + 1, _y + 33, string(_p.size));
     }
 
     draw_set_colour(c_white);
@@ -539,6 +544,19 @@ update_timers = function() {
     if (board_shake > 0) board_shake--;
     if (pin_t > 0) pin_t--;
     if (dot_t > 0) dot_t--;
+    if (title_t > 0) title_t--;
+    if (jump_t > 0) jump_t--;
+	if (q_in_t < 200) q_in_t++;
+
+    // Nivel completado: se muestra cuando el último bloque ya aterrizó
+    if (win_t > 0) {
+        win_t--;
+        if (win_t == 0) {
+            state = "win";
+            dot_t = 30;
+            audio_play_sound(snd_ram_win, 10, false);
+        }
+    }
 
     if (emo_timer > 0) {
         emo_timer--;
@@ -551,6 +569,16 @@ update_slides = function() {
     for (var i = 0; i < array_length(procs); i++) {
         var _p = procs[i];
         if (_p.pop > 0) _p.pop--;
+		// Aterrizaje del bloque que viajó desde la cola: rebote y chispas
+                // Aterrizaje del bloque que viajó desde la cola: rebote, chispas y sonido
+        if (_p.fly > 0) {
+            _p.fly--;
+            if (_p.fly == 0) {
+                _p.pop = 10;
+                spawn_parts(cell_x0 + _p.dx * cell_w, cell_y0, _p.size * cell_w, cell_h, 10, block_colors[_p.k mod 8]);
+                play_sfx(snd_ram_place, 1.2 - _p.size * 0.1, 0.02);
+            }
+        }
         if (_p.slot == -1) continue;
 
         _p.dx = lerp(_p.dx, _p.slot, 0.15);
@@ -589,6 +617,8 @@ update_fade = function() {
         fade_alpha = min(1, fade_alpha + fade_speed);
         if (fade_alpha >= 1) {
             load_level(fade_next);
+			q_in_t = 0;
+			title_t = 20;
             audio_play_sound(snd_ram_levelstart, 5, false);
             fade_dir = -1;
         }
@@ -666,6 +696,7 @@ gui_shade = function(_alpha) {
 // Fondo, placa y brillo recorriendo los contactos dorados al compactar
 gui_board = function() {
     draw_sprite(spr_ram_bg, 0, 0, 0);
+	gui_bg_pulses();
     draw_sprite(spr_ram_board, 0, board_x, board_y);
 
     if (pin_t > 0) {
@@ -688,13 +719,14 @@ gui_title = function() {
     var _lvl = "Nivel " + string(level + 1) + " :";
     var _name = " " + data.name;
     var _tw = string_width(_lvl) + 1 + string_width(_name) + 16; // +1 por la negrita
-    draw_sprite_stretched(spr_ram_level, 0, 32, 4, _tw, 18);
+    var _oy = -floor(sqr(title_t / 20) * 26);                    // entra deslizando desde arriba
+    draw_sprite_stretched(spr_ram_level, 0, 32, 4 + _oy, _tw, 18);
 
     draw_set_colour(make_colour_rgb(126, 248, 203));
-    draw_text(40, 5, _lvl);
-    draw_text(41, 5, _lvl); // segunda pasada: negrita falsa
+    draw_text(40, 5 + _oy, _lvl);
+    draw_text(41, 5 + _oy, _lvl); // segunda pasada: negrita falsa
     draw_set_colour(c_white);
-    draw_text(41 + string_width(_lvl), 5, _name);
+    draw_text(41 + string_width(_lvl), 5 + _oy, _name);
 }
 
 // Celdas, procesos, reservas del sistema, cursor y partículas
@@ -705,7 +737,7 @@ gui_memory = function() {
 
     for (var i = 0; i < array_length(procs); i++) {
         var _p = procs[i];
-        if (_p.slot == -1) continue;
+		if (_p.slot == -1 || _p.fly > 0) continue; // los que viajan se dibujan en gui_flying
         var _px = cell_x0 + _p.dx * cell_w;
         if (!_p.fixed) {
             draw_block(_px, cell_y0, _p, 1);
@@ -723,6 +755,7 @@ gui_memory = function() {
         var _z = procs[queue[0]].size;
         var _frame = (busy_timer > 0 || !fits(mem, cur, _z)) ? 1 : 0;
         var _csh = shake_offset(board_shake);
+		if (show_preview && busy_timer <= 0 && fits(mem, cur, _z)) draw_block(cell_x0 + cur * cell_w + _csh, cell_y0, procs[queue[0]], 0.45);
         for (var j = max(cur, 0); j < cur + _z && j < RAM_CELLS; j++) {
             var _ca = (mem[j] != -1) ? 0.35 : 1; // sobre un proceso: se ve lo de abajo
             draw_sprite_ext(spr_ram_cell_cursor, _frame, cell_x0 + j * cell_w + _csh, cell_y0, 1, 1, 0, c_white, _ca);
@@ -751,7 +784,7 @@ gui_status = function() {
         var _gw = _iw + _gap + string_width(_txt[i]);
         var _gx = floor(32 + _col_w * i + _col_w / 2 - _gw / 2);
         draw_sprite(spr_ram_status_icons, i, _gx, 118);
-        draw_text(_gx + _iw + _gap, 123, _txt[i]);
+        draw_text(_gx + _iw + _gap, 122, _txt[i]);
     }
 
     // Separadores verticales ligeros entre columnas
@@ -772,7 +805,7 @@ gui_queue = function() {
     draw_sprite_stretched(spr_ram_queue_panel, 0, queue_x, 134, 416, 46);
     for (var i = 0; i < array_length(queue); i++) {
         var _p = procs[queue[i]];
-        var _qx = floor(_p.qx);
+        var _qx = floor(_p.qx) + queue_in_offset(_p);
         draw_queue_block(_qx, _qy, _p, (i == 0) ? 1 : 0.55);
         if (i == 0) {
             var _w = _p.size * qcell_w;
@@ -782,6 +815,16 @@ gui_queue = function() {
             var _af = floor(current_time / 1000 * 8) mod sprite_get_number(spr_ram_queue_next);
             draw_sprite(spr_ram_queue_next, _af, _qx + floor(_w / 2) - 4, _qy - 10);
         }
+    }
+}
+
+// Bloques que viajan desde la cola hasta su celda (se dibujan sobre la cola)
+gui_flying = function() {
+    for (var i = 0; i < array_length(procs); i++) {
+        var _p = procs[i];
+        if (_p.fly <= 0) continue;
+        var _k = sqr(_p.fly / fly_frames); // 1 al salir, 0 al llegar: frena al aterrizar
+        draw_block(floor(lerp(cell_x0 + _p.dx * cell_w, _p.fx, _k)), floor(lerp(cell_y0, 140, _k)), _p, 1);
     }
 }
 
@@ -829,6 +872,7 @@ gui_gepet = function() {
     else if (emo == "serio") _spr = spr_ram_gepet_serio;
     var _talking = (msg_char < msg_len) && (msg_pause_timer <= 0);
     var _f = _talking ? (floor(current_time / 1000 * 6) mod sprite_get_number(_spr)) : 0; // boca abierta/cerrada a 6 fps
+	if (jump_t > 0 && emo == "error") _f = ((jump_t div 8) mod 2 == 1) ? min(gepet_jump_frame, sprite_get_number(_spr) - 1) : 0; // alterna normal/salto cada 8 frames
     draw_sprite(_spr, _f, 36, 211);
     draw_text_ext(90, 216, string_copy(msg_full, 1, msg_char), 12, 1000);
 }
@@ -866,6 +910,107 @@ gui_dots = function() {
         }
         draw_sprite(spr_ram_level_dot, _df, 331 + i * 15, 8 + _dy);
     }
+}
+
+// --- Fondo animado: pulsos de datos que viajan por las pistas hacia los nodos ---
+bgp_speed = 48;                  // velocidad en píxeles por segundo
+bgp_step = 5;                    // separación entre la cabeza del pulso y cada tramo de su estela
+bgp_tail = [1, 0.65, 0.4, 0.2];  // brillo de la cabeza y de la estela
+bgp_tracks = [
+    // pts: recorrido del borde al nodo | node: [x, y, ancho, alto] | gap: pausa en segundos | phase: desfase
+    { pts: [71,0, 58,12, 45,12], node: [40,11,5,5], gap: 2.4, phase: 0.0 },
+    { pts: [281,0, 268,12, 260,13], node: [255,11,5,5], gap: 3.6, phase: 1.9 },
+    { pts: [358,0, 353,4, 327,4, 315,16], node: [308,17,6,6], gap: 2.0, phase: 0.8 },
+    { pts: [114,15, 124,15, 134,5, 167,5, 167,3], node: [168,0,5,5], gap: 4.2, phase: 0.3 },
+    { pts: [202,0, 188,13, 144,13, 120,36], node: [], gap: 3.0, phase: 2.6 },
+    { pts: [479,139, 476,143, 476,149, 469,156, 459,156, 450,165, 423,165], node: [417,163,6,6], gap: 2.6, phase: 1.4 },
+    { pts: [471,227, 464,234, 428,234], node: [424,233,4,4], gap: 3.8, phase: 1.9 },
+    { pts: [3,269, 30,243, 109,243, 123,231], node: [122,224,7,7], gap: 2.2, phase: 3.3 },
+    { pts: [19,269, 38,251, 117,251, 124,243], node: [125,240,5,6], gap: 3.4, phase: 3.6 },
+    { pts: [478,241, 437,242, 424,255, 424,259], node: [418,255,6,7], gap: 2.8, phase: 0.6 },
+    { pts: [386,269, 391,265], node: [391,261,4,4], gap: 4.0, phase: 2.5 }
+];
+
+// Largo acumulado de cada pista (se calcula una sola vez)
+for (var _bi = 0; _bi < array_length(bgp_tracks); _bi++) {
+    var _bt = bgp_tracks[_bi];
+    var _bn = array_length(_bt.pts) div 2;
+    _bt.cum = array_create(_bn, 0);
+    for (var _bj = 1; _bj < _bn; _bj++) {
+        _bt.cum[_bj] = _bt.cum[_bj - 1] + point_distance(_bt.pts[_bj * 2 - 2], _bt.pts[_bj * 2 - 1], _bt.pts[_bj * 2], _bt.pts[_bj * 2 + 1]);
+    }
+    _bt.total = _bt.cum[_bn - 1];
+    _bt.travel = _bt.total / bgp_speed;     // segundos que tarda el pulso en llegar
+    _bt.period = _bt.travel + _bt.gap;      // viaje + pausa
+}
+
+// Posición [x, y] a una distancia _s del inicio de una pista
+bgp_point = function(_t, _s) {
+    var _j = 1;
+    while (_j < array_length(_t.cum) - 1 && _t.cum[_j] < _s) _j++;
+    var _len = _t.cum[_j] - _t.cum[_j - 1];
+    var _k = (_len > 0) ? clamp((_s - _t.cum[_j - 1]) / _len, 0, 1) : 0;
+    return [lerp(_t.pts[_j * 2 - 2], _t.pts[_j * 2], _k), lerp(_t.pts[_j * 2 - 1], _t.pts[_j * 2 + 1], _k)];
+}
+
+// Pulsos que recorren las pistas: se vuelve a dibujar el propio fondo, multiplicado por sí mismo
+gui_bg_pulses = function() {
+    var _now = current_time / 1000;
+    gpu_set_blendmode_ext(bm_dest_color, bm_one); // aclara las pistas sin tocar el fondo oscuro
+    for (var i = 0; i < array_length(bgp_tracks); i++) {
+        var _t = bgp_tracks[i];
+        var _c = (_now + _t.phase) mod _t.period;
+
+        if (_c < _t.travel) {
+            // Cabeza del pulso y su estela
+            for (var k = 0; k < array_length(bgp_tail); k++) {
+                var _d = _c * bgp_speed - k * bgp_step;
+                if (_d < 0) break;
+                var _p = bgp_point(_t, min(_d, _t.total));
+                var _px = clamp(floor(_p[0]) - 2, 0, 475);
+                var _py = clamp(floor(_p[1]) - 2, 0, 265);
+                var _col = merge_colour(c_black, c_white, bgp_tail[k]);
+                repeat (k == 0 ? 3 : 1) draw_sprite_part_ext(spr_ram_bg, 0, _px, _py, 5, 5, _px, _py, 1, 1, _col, 1);
+            }
+        }
+        else if (_c < _t.travel + 0.6 && array_length(_t.node) > 0) {
+            // El nodo brilla un instante cuando llega el pulso
+            var _nb = _t.node;
+            var _nx = max(_nb[0] - 1, 0);
+            var _ny = max(_nb[1] - 1, 0);
+            var _col = merge_colour(c_black, c_white, 1 - (_c - _t.travel) / 0.6);
+            repeat (3) draw_sprite_part_ext(spr_ram_bg, 0, _nx, _ny, _nb[2] + 2, _nb[3] + 2, _nx, _ny, 1, 1, _col, 1);
+        }
+    }
+    gpu_set_blendmode(bm_normal);
+}
+
+// Desplazamiento horizontal de un bloque de la cola mientras entra al empezar el nivel
+queue_in_offset = function(_p) {
+    var _t = q_in_t - _p.qdelay;
+    if (_t >= 28) return 0;
+    if (_t < 0) return 480;                                        // todavía no entra
+    if (_t < 14) return floor(480 * power(1 - _t / 14, 3));        // llega rápido desde la derecha
+    var _v = (_t - 14) / 14;
+    return round(-6 * sin(_v * 2 * pi) * (1 - _v));                // choca, rebota y se acomoda
+}
+
+// Transición entre niveles: la pantalla se apaga por columnas alineadas con las celdas de la RAM
+gui_wipe = function() {
+    var _out = (fade_dir == 1);
+    var _p = _out ? fade_alpha : 1 - fade_alpha; // progreso del barrido, de izquierda a derecha
+    draw_set_colour(c_black);
+    for (var c = 0; c < RAM_CELLS; c++) {
+        var _d = clamp(_p * (RAM_CELLS + 3) - c, 0, 1); // cada columna se apaga un poco después de la anterior
+        if (!_out) _d = 1 - _d;                         // al volver, se enciende en el mismo orden
+        if (_d <= 0) continue;
+        var _x1 = (c == 0) ? 0 : cell_x0 + c * cell_w;
+        var _x2 = (c == RAM_CELLS - 1) ? 480 : cell_x0 + (c + 1) * cell_w;
+        draw_set_alpha(_d);
+        draw_rectangle(_x1, 0, _x2 - 1, 269, false);
+    }
+    draw_set_alpha(1);
+    draw_set_colour(c_white);
 }
 
 load_level(0);
